@@ -1,0 +1,51 @@
+version: '2.1'
+services:
+    postgres:
+        image: postgres:13
+        environment:
+            # THESE DEFAULTS WILL BE OVERWRITTEN IN PRD DEPLOY
+            - POSTGRES_USER=airflow
+            - POSTGRES_PASSWORD=airflow
+            - POSTGRES_DB=airflow
+
+    data_warehouse:
+        image: postgres:13
+        volumes:
+            - ./db-init-scripts:/docker-entrypoint-initdb.d
+        environment:
+            # THESE DEFAULTS WILL BE OVERWRITTEN IN PRD DEPLOY
+            - POSTGRES_USER=airflow_dw
+            - POSTGRES_PASSWORD=airflow_dw
+            - POSTGRES_DB=dw
+
+    webserver:
+        build:
+          context: .
+          dockerfile: Dockerfile
+        restart: always
+        depends_on:
+            - postgres
+        environment:
+            - FERNET_KEY=46BKJoQYlPPOexq0OhDZnIlNepKFf87WFwLbfzqDDho=
+            - AIRFLOW__CORE__EXECUTOR=LocalExecutor
+            - AIRFLOW__CORE__SQL_ALCHEMY_CONN=postgresql+psycopg2://airflow:airflow@postgres:5432/airflow
+            # THESE DEFAULTS WILL BE OVERWRITTEN IN PRD DEPLOY
+            # - POSTGRES_USER=airflow
+            # - POSTGRES_PASSWORD=airflow
+            # - POSTGRES_DB=airflow
+            # - REDIS_PASSWORD=redispass
+        env_file:
+            - ./credentials.env
+        volumes:
+            - ./dags:/opt/airflow/dags
+            - ./webserver_config.py:/opt/airflow/webserver_config.py
+            - ${HOME}/.aws:/root/.aws # copy aws credentials from host to container
+        ports:
+            - "8080:8080"
+        command: >
+            bash -c "airflow standalone"
+        healthcheck:
+            test: ["CMD-SHELL", "[ -f /usr/local/airflow/airflow-webserver.pid ]"]
+            interval: 30s
+            timeout: 30s
+            retries: 3

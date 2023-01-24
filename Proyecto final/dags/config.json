@@ -1,0 +1,9 @@
+{
+	"stocks": ["MSFT", "AAPL", "QQQ", "XLE"],
+	"thresholds": {
+		"MSFT": {"min": 240, "max": 290},
+		"AAPL": {"min": 240, "max": 290},
+		"QQQ": {"min": 240, "max": 290},
+		"XLE": {"min": 240, "max": 290}
+	}
+}
